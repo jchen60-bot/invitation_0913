@@ -1,0 +1,6 @@
+{
+  "name": "NMDP Tabling Session Invitation",
+  "description": "A playful, modern mobile-first digital event invitation for the NMDP x UC Berkeley tabling session at Bancroft Way.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
