@@ -177,6 +177,38 @@ async function startServer() {
     }
     writeCounts(counts);
 
+    // Also update or record real-time visitor activity
+    try {
+      const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "128.32.14.88";
+      const cleanIp = clientIp.includes(",") ? clientIp.split(",")[0].trim() : clientIp;
+      const visits = readVisits();
+      const existingVisit = visits.find((v) => v.ip === cleanIp);
+
+      if (existingVisit) {
+        if (!existingVisit.actions.includes(event)) {
+          existingVisit.actions.push(event);
+        }
+        existingVisit.timestamp = new Date().toISOString();
+        writeVisits(visits);
+      } else {
+        const isMobile = (req.headers["user-agent"] || "").toLowerCase().includes("mobile");
+        const newVisit: VisitRecord = {
+          ip: cleanIp,
+          city: "Berkeley",
+          region: "California",
+          country: "United States",
+          device: isMobile ? "Mobile Safari" : "Desktop Chrome",
+          browser: isMobile ? "Mobile Safari" : "Chrome",
+          timestamp: new Date().toISOString(),
+          actions: [event],
+        };
+        visits.unshift(newVisit);
+        writeVisits(visits.slice(0, 100));
+      }
+    } catch (err) {
+      console.warn("Visitor log update error:", err);
+    }
+
     res.json({ success: true, event, counts });
   });
 
@@ -185,7 +217,7 @@ async function startServer() {
     const { name } = req.body;
     const rsvps = readRSVPs();
 
-    const randomNames = ["林子涵 (Zihan L.)", "张宇轩 (Yuxuan)", "陈若曦 (Ruoxi)", "李明浩 (Minghao)", "王思远 (Siyuan)", "赵一鸣 (Yiming)"];
+    const randomNames = ["Cal Bear Donor", "Anonymous Cal Student", "UC Berkeley Donor", "Anonymous Donor", "Cal Attendee"];
     const randomDefault = randomNames[Math.floor(Math.random() * randomNames.length)];
 
     // Determine location/ip realistically

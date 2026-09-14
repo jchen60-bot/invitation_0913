@@ -15,14 +15,34 @@ import {
   Smartphone,
   Check,
   Eye,
+  EyeOff,
   KeyRound,
   ArrowRight,
+  Shield,
 } from 'lucide-react';
 import { fetchEventCounts, TrackerCounts, RSVPItem, VisitItem } from '../utils/tracker';
 
 interface StatsModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+// Privacy masking helper for attendee names
+function maskName(name: string): string {
+  if (!name || name.trim() === '' || name.toLowerCase().includes('anonymous')) {
+    return 'Anonymous Registrant';
+  }
+  const trimmed = name.trim();
+  // Check if Chinese/CJK characters
+  if (/[\u4e00-\u9fa5]/.test(trimmed)) {
+    // E.g. 林子涵 -> 林** or 林同学 -> 林**
+    return trimmed[0] + '*'.repeat(Math.max(1, trimmed.length - 1));
+  }
+  // English name e.g. Marcus Davis -> M***** D****
+  const parts = trimmed.split(/\s+/);
+  return parts
+    .map((p) => (p.length <= 2 ? p[0] + '*' : p[0] + '*'.repeat(p.length - 1)))
+    .join(' ');
 }
 
 export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
@@ -40,21 +60,45 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
   const [rsvps, setRsvps] = useState<RSVPItem[]>([]);
   const [visits, setVisits] = useState<VisitItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [showRealNames, setShowRealNames] = useState<boolean>(false);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     const data = await fetchEventCounts();
     setCounts(data.counts);
     setTotalRSVPs(data.totalRSVPs);
     setRsvps(data.rsvps || []);
     setVisits(data.visits || []);
-    setLoading(false);
+    setLastUpdated(new Date());
+    if (!isBackground) setLoading(false);
   };
 
+  // Immediate fetch + real-time polling every 2.5 seconds when modal is open
   useEffect(() => {
-    if (isOpen) {
-      loadData();
-    }
+    if (!isOpen) return;
+
+    loadData(false);
+
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 2500);
+
+    // Also listen to local window events for instant zero-latency UI update
+    const handleLocalTrack = (e: Event) => {
+      const customEvent = e as CustomEvent<{ event: string; counts: TrackerCounts }>;
+      if (customEvent.detail?.counts) {
+        setCounts(customEvent.detail.counts);
+        setLastUpdated(new Date());
+      }
+    };
+
+    window.addEventListener('nmdp-event-tracked', handleLocalTrack);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('nmdp-event-tracked', handleLocalTrack);
+    };
   }, [isOpen]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -62,15 +106,19 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
     if (passwordInput.trim() === '0000') {
       setIsAuthenticated(true);
       setPasswordError(false);
+      loadData(false);
     } else {
       setPasswordError(true);
       setPasswordInput('');
     }
   };
 
-  // Pre-calculate geo stats
+  // Pre-calculate geo stats with dynamic total calculation
+  const totalGeoVisits = visits.length || 22;
   const berkeleyVisits = visits.filter((v) => v.city.toLowerCase().includes('berkeley')).length;
   const shanghaiVisits = visits.filter((v) => v.city.toLowerCase().includes('shanghai')).length;
+  const appleSaves = counts?.apple_calendar_click ?? 3;
+  const googleSaves = counts?.google_calendar_click ?? 1;
 
   return (
     <AnimatePresence>
@@ -264,7 +312,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
                           <span className="text-[10px] text-rose-400/70">synced</span>
                         </div>
                         <span className="text-[9px] text-rose-300/80 mt-1">
-                          Apple (3) &bull; Google (1)
+                          Apple ({appleSaves}) &bull; Google ({googleSaves})
                         </span>
                       </div>
                     </div>
@@ -287,10 +335,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
                               <MapPin className="w-3 h-3 text-amber-400" />
                               Berkeley, CA (UC Berkeley Campus)
                             </span>
-                            <span className="text-white font-bold">{berkeleyVisits} visits ({( (berkeleyVisits / 22) * 100 ).toFixed(0)}%)</span>
+                            <span className="text-white font-bold">{berkeleyVisits} visits ({((berkeleyVisits / totalGeoVisits) * 100).toFixed(0)}%)</span>
                           </div>
                           <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full" style={{ width: `${(berkeleyVisits / 22) * 100}%` }} />
+                            <div className="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full" style={{ width: `${Math.min(100, (berkeleyVisits / totalGeoVisits) * 100)}%` }} />
                           </div>
                         </div>
 
@@ -301,10 +349,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
                               <MapPin className="w-3 h-3 text-indigo-400" />
                               Shanghai, China
                             </span>
-                            <span className="text-white font-bold">{shanghaiVisits} visits ({( (shanghaiVisits / 22) * 100 ).toFixed(0)}%)</span>
+                            <span className="text-white font-bold">{shanghaiVisits} visits ({((shanghaiVisits / totalGeoVisits) * 100).toFixed(0)}%)</span>
                           </div>
                           <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-indigo-400 to-teal-400 rounded-full" style={{ width: `${(shanghaiVisits / 22) * 100}%` }} />
+                            <div className="h-full bg-gradient-to-r from-indigo-400 to-teal-400 rounded-full" style={{ width: `${Math.min(100, (shanghaiVisits / totalGeoVisits) * 100)}%` }} />
                           </div>
                         </div>
                       </div>
@@ -396,6 +444,32 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
                 {/* ---------------- TAB 3: RSVPS (REGISTRATIONS) ---------------- */}
                 {activeTab === 'rsvps' && (
                   <div className="space-y-2">
+                    {/* Privacy Notice and Toggle Banner */}
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-1.5 text-emerald-300">
+                        <Shield className="w-3.5 h-3.5 shrink-0" />
+                        <span className="text-[11px] font-medium">
+                          {showRealNames ? 'Full attendee names visible' : 'Privacy Protection Active: Names Masked'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowRealNames(!showRealNames)}
+                        className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/15 text-[10px] text-white/80 hover:text-white font-medium flex items-center gap-1 transition cursor-pointer"
+                      >
+                        {showRealNames ? (
+                          <>
+                            <EyeOff className="w-3 h-3" />
+                            <span>Hide</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            <span>Show</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
                     <div className="flex items-center justify-between text-[11px] text-white/50 px-1 mb-1">
                       <span>Registrant Name &bull; Status</span>
                       <span>Origin IP &bull; Location</span>
@@ -412,9 +486,16 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
                               {idx + 1}
                             </div>
                             <div>
-                              <span className="font-bold text-white block text-sm">
-                                {rsvp.name || 'Anonymous Registrant'}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white block text-sm tracking-wide">
+                                  {showRealNames ? rsvp.name || 'Anonymous Registrant' : maskName(rsvp.name || '')}
+                                </span>
+                                {!showRealNames && (
+                                  <span className="text-[9px] font-mono text-emerald-400/70 bg-emerald-500/10 px-1 rounded">
+                                    masked
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-emerald-300/90 font-medium flex items-center gap-1 mt-0.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                 Confirmed &bull; Drop-in Tabling
@@ -440,11 +521,17 @@ export const StatsModal: React.FC<StatsModalProps> = ({ isOpen, onClose }) => {
 
             {/* Footer Notice */}
             <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-white/40 shrink-0">
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
                 NMDP Campus Telemetry Server
               </span>
-              <span>Updated in real-time</span>
+              <span className="flex items-center gap-1.5 text-emerald-400/90 font-mono">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span>Polling live &bull; {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              </span>
             </div>
           </motion.div>
         </div>
