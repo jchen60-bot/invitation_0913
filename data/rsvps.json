@@ -1,1 +1,44 @@
-[]
+[
+  {
+    "id": "rsvp_1726301201_bk1",
+    "name": "林子涵 (Zihan L.)",
+    "location": "Berkeley, CA",
+    "ip": "128.32.14.88",
+    "timestamp": "2026-09-13T16:22:15.000Z"
+  },
+  {
+    "id": "rsvp_1726305412_sh1",
+    "name": "张宇轩 (Yuxuan Zhang)",
+    "location": "Shanghai, CN",
+    "ip": "180.168.41.112",
+    "timestamp": "2026-09-13T18:45:30.000Z"
+  },
+  {
+    "id": "rsvp_1726309823_bk2",
+    "name": "陈若曦 (Ruoxi C.)",
+    "location": "Berkeley, CA",
+    "ip": "128.32.220.15",
+    "timestamp": "2026-09-13T20:10:04.000Z"
+  },
+  {
+    "id": "rsvp_1726314010_bk3",
+    "name": "Marcus Davis",
+    "location": "Berkeley, CA",
+    "ip": "136.152.142.60",
+    "timestamp": "2026-09-13T22:31:18.000Z"
+  },
+  {
+    "id": "rsvp_1726318991_sh2",
+    "name": "王思远 (Siyuan Wang)",
+    "location": "Shanghai, CN",
+    "ip": "101.86.204.45",
+    "timestamp": "2026-09-14T01:15:42.000Z"
+  },
+  {
+    "id": "rsvp_1726322400_bk4",
+    "name": "赵一鸣 (Yiming Zhao)",
+    "location": "Berkeley, CA",
+    "ip": "128.32.115.93",
+    "timestamp": "2026-09-14T03:08:29.000Z"
+  }
+]

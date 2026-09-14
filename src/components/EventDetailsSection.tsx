@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   UserCheck,
   Send,
-  Mail,
   User,
   Clock,
   ChevronDown,
@@ -28,7 +27,6 @@ export const EventDetailsSection: React.FC<EventDetailsSectionProps> = ({ onAddC
   const [hasRsvpd, setHasRsvpd] = useState<boolean>(() => getUserRSVPStatus());
   const [showCustomForm, setShowCustomForm] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
@@ -48,15 +46,15 @@ export const EventDetailsSection: React.FC<EventDetailsSectionProps> = ({ onAddC
     });
   };
 
-  // Detailed RSVP with Name / Email
+  // Detailed RSVP with Name
   const handleDetailedRSVP = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email && !name) {
+    if (!name.trim()) {
       handleQuickRSVP();
       return;
     }
     setIsSubmitting(true);
-    await submitRSVP(name, email);
+    await submitRSVP(name.trim());
     setHasRsvpd(true);
     setIsSubmitting(false);
 
@@ -153,44 +151,34 @@ export const EventDetailsSection: React.FC<EventDetailsSectionProps> = ({ onAddC
               <span>{isSubmitting ? 'Recording...' : '🙋 Count Me In! (1-Tap RSVP)'}</span>
             </button>
 
-            {/* Optional detailed form toggle */}
+            {/* Optional detailed name form toggle */}
             {!showCustomForm ? (
               <button
                 onClick={() => setShowCustomForm(true)}
-                className="w-full text-center text-xs text-white/50 hover:text-white/80 transition underline pt-1"
+                className="w-full text-center text-xs text-white/50 hover:text-white/80 transition underline pt-1 cursor-pointer"
               >
-                Want an email reminder on Sept 21 morning? Click here
+                Prefer to register with your name or nickname? Click here
               </button>
             ) : (
               <form onSubmit={handleDetailedRSVP} className="mt-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-3">
-                <span className="text-xs font-bold text-white/80 block">Get a morning reminder:</span>
+                <span className="text-xs font-bold text-white/80 block">Add your name to the attendee list:</span>
                 <div className="relative">
                   <User className="w-3.5 h-3.5 text-white/40 absolute left-3 top-3.5" />
                   <input
                     type="text"
-                    placeholder="Your name (optional)"
+                    placeholder="e.g. 林同学 / Alex / Yuxuan"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-                <div className="relative">
-                  <Mail className="w-3.5 h-3.5 text-white/40 absolute left-3 top-3.5" />
-                  <input
-                    type="email"
-                    placeholder="Berkeley email or personal email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-rose-500"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-xs font-bold text-white flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition text-xs font-bold text-white flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Save My RSVP Reminder</span>
+                  <span>Confirm RSVP Registration</span>
                 </button>
               </form>
             )}

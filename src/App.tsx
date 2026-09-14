@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { MatchingAnimation } from './components/MatchingAnimation';
 import { CalendarBottomSheet } from './components/CalendarBottomSheet';
 import { StatsModal } from './components/StatsModal';
+import { ShareModal } from './components/ShareModal';
 import { EventDetailsSection } from './components/EventDetailsSection';
 import { trackEvent } from './utils/tracker';
 import { playMatchChime } from './utils/sound';
@@ -21,6 +22,7 @@ import {
   Check,
   HeartHandshake,
   ChevronDown,
+  QrCode,
 } from 'lucide-react';
 
 export default function App() {
@@ -28,6 +30,7 @@ export default function App() {
   const [showInvitation, setShowInvitation] = useState<boolean>(false);
   const [calendarSheetOpen, setCalendarSheetOpen] = useState<boolean>(false);
   const [statsModalOpen, setStatsModalOpen] = useState<boolean>(false);
+  const [shareModalOpen, setShareModalOpen] = useState<boolean>(false);
   const [hasAddedCalendar, setHasAddedCalendar] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
@@ -146,32 +149,23 @@ export default function App() {
             <ExternalLink className="w-3 h-3 text-rose-400/70 group-hover:text-rose-300 group-hover:translate-x-0.5 transition-all" />
           </button>
 
-          {/* Right Action Icons: Share Link & Assignment Stats */}
+          {/* Right Action Icons: Share & QR Code, and Live Stats */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Share Invitation Link Button */}
+            {/* Share / QR Code Invitation Modal Button */}
             <button
-              onClick={handleShare}
-              className="text-[11px] text-white/60 hover:text-white active:scale-95 transition flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10"
-              title="Copy event link to share"
+              onClick={() => setShareModalOpen(true)}
+              className="text-[11px] text-white/70 hover:text-white active:scale-95 transition flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer shadow-sm"
+              title="Share event & display QR code"
             >
-              {copiedLink ? (
-                <>
-                  <Check className="w-3 h-3 text-emerald-400" />
-                  <span className="text-emerald-400 font-semibold">copied!</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3 h-3 text-white/70" />
-                  <span className="hidden sm:inline">share</span>
-                </>
-              )}
+              <QrCode className="w-3.5 h-3.5 text-rose-400" />
+              <span>share / QR</span>
             </button>
 
             {/* Real-time Project Stats */}
             <button
               onClick={() => setStatsModalOpen(true)}
-              className="text-[11px] text-white/60 hover:text-white active:scale-95 transition flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10"
-              title="Class Assignment Real-time Stats"
+              className="text-[11px] text-white/60 hover:text-white active:scale-95 transition flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer"
+              title="Campaign Live Analytics & Telemetry"
             >
               <BarChart2 className="w-3 h-3 text-indigo-400" />
               <span>stats</span>
@@ -480,10 +474,11 @@ export default function App() {
             </span>
             <span>&bull;</span>
             <button
-              onClick={handleShare}
-              className="text-white/40 hover:text-white/90 underline decoration-dotted transition text-xs"
+              onClick={() => setShareModalOpen(true)}
+              className="text-white/50 hover:text-white underline decoration-dotted transition text-xs flex items-center gap-1 cursor-pointer"
             >
-              {copiedLink ? '✓ Link Copied!' : 'Share invite with classmates'}
+              <QrCode className="w-3 h-3 text-rose-400" />
+              <span>Share invite &amp; QR Code</span>
             </button>
           </div>
 
@@ -493,6 +488,12 @@ export default function App() {
         </footer>
       </main>
 
+      {/* Share & QR Code Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+      />
+
       {/* Calendar Bottom Sheet */}
       <CalendarBottomSheet
         isOpen={calendarSheetOpen}
@@ -500,7 +501,7 @@ export default function App() {
         onCalendarSelected={() => setHasAddedCalendar(true)}
       />
 
-      {/* Real-time Tracking & Class Reflection Modal */}
+      {/* Real-time Tracking & Campaign Telemetry Modal */}
       <StatsModal
         isOpen={statsModalOpen}
         onClose={() => setStatsModalOpen(false)}

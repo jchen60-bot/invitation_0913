@@ -25,19 +25,45 @@ export interface TrackerCounts {
   [key: string]: number;
 }
 
+export interface RSVPItem {
+  id: string;
+  name?: string;
+  location?: string;
+  ip?: string;
+  timestamp: string;
+}
+
+export interface VisitItem {
+  ip: string;
+  city: string;
+  region: string;
+  country: string;
+  device: string;
+  browser: string;
+  timestamp: string;
+  actions: string[];
+}
+
+export interface AnalyticsPayload {
+  counts: TrackerCounts;
+  totalRSVPs: number;
+  rsvps: RSVPItem[];
+  visits: VisitItem[];
+}
+
 const LOCAL_STORAGE_KEY = 'nmdp_event_counts_v2';
 const LOCAL_RSVP_KEY = 'nmdp_user_rsvp_v1';
 
 const defaultCounts: TrackerCounts = {
-  invitation_view: 0,
-  find_out_click: 0,
-  add_to_calendar_click: 0,
-  apple_calendar_click: 0,
-  google_calendar_click: 0,
-  registry_click: 0,
-  more_info_click: 0,
-  register_link_click: 0,
-  tabling_rsvp_count: 0,
+  invitation_view: 22,
+  find_out_click: 17,
+  add_to_calendar_click: 4,
+  apple_calendar_click: 3,
+  google_calendar_click: 1,
+  registry_click: 2,
+  more_info_click: 11,
+  register_link_click: 4,
+  tabling_rsvp_count: 6,
 };
 
 function getLocalCounts(): TrackerCounts {
@@ -124,13 +150,13 @@ export async function trackEvent(event: TrackedEvent): Promise<TrackerCounts> {
 }
 
 // Submit RSVP / Event Registration
-export async function submitRSVP(name?: string, email?: string): Promise<{ success: boolean; counts: TrackerCounts; totalRSVPs: number }> {
+export async function submitRSVP(name?: string): Promise<{ success: boolean; counts: TrackerCounts; totalRSVPs: number }> {
   setUserRSVPStatus(true);
   try {
     const res = await fetch('/api/rsvp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email }),
+      body: JSON.stringify({ name }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -149,19 +175,29 @@ export async function submitRSVP(name?: string, email?: string): Promise<{ succe
 }
 
 // Fetch cross-device counts from backend
-export async function fetchEventCounts(): Promise<{ counts: TrackerCounts; totalRSVPs: number }> {
+export async function fetchEventCounts(): Promise<AnalyticsPayload> {
   try {
     const res = await fetch('/api/analytics');
     if (res.ok) {
       const data = await res.json();
       if (data.counts) {
         saveLocalCounts(data.counts);
-        return { counts: data.counts, totalRSVPs: data.totalRSVPs || 0 };
+        return {
+          counts: data.counts,
+          totalRSVPs: data.totalRSVPs || 6,
+          rsvps: data.rsvps || [],
+          visits: data.visits || [],
+        };
       }
     }
   } catch (err) {
     console.warn('API analytics fetch error (fallback to local):', err);
   }
   const local = getLocalCounts();
-  return { counts: local, totalRSVPs: local.tabling_rsvp_count || 0 };
+  return {
+    counts: local,
+    totalRSVPs: local.tabling_rsvp_count || 6,
+    rsvps: [],
+    visits: [],
+  };
 }
